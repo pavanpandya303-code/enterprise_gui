@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PQC Migration Toolkit</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f0f23; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    /* Header */
+    header { text-align: center; padding: 40px 20px 30px; }
+    header h1 { color: #00d2ff; font-size: 2.2em; font-weight: 700; }
+    header p { color: #888; font-size: 1em; margin-top: 8px; }
+
+    /* Nav buttons */
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 30px; }
+    .nav button { background: #1a1a3e; color: #ccc; border: 1px solid #333; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85em; transition: all .2s; }
+    .nav button:hover { background: #2a2a5e; border-color: #00d2ff; color: #fff; }
+    .nav button.active { background: #00d2ff; color: #000; border-color: #00d2ff; font-weight: 600; }
+
+    /* Content panels */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Cards */
+    .card { background: #1a1a3e; border-radius: 10px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2a5e; }
+    .card h3 { color: #00d2ff; margin-bottom: 12px; font-size: 1em; }
+    .card table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+    .card th, .card td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #2a2a5e; }
+    .card th { color: #888; font-weight: 500; text-transform: uppercase; font-size: 0.75em; }
+    .card td { color: #ddd; }
+    .pass { color: #4caf50; font-weight: 600; }
+    .fail { color: #f44336; font-weight: 600; }
+    .card .stat { display: inline-block; background: #0f0f23; padding: 4px 10px; border-radius: 4px; margin: 2px; font-size: 0.85em; color: #aaa; }
+    .card .stat b { color: #fff; }
+
+    .chart-img { max-width: 100%; border-radius: 8px; margin-top: 10px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .note-box { background: #0f0f23; border-left: 3px solid #00d2ff; padding: 12px 16px; border-radius: 4px; font-size: 0.85em; color: #aaa; margin-top: 10px; }
+
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .loading::after { content: "..."; animation: dots 1.5s infinite; }
+    @keyframes dots { 0%,20% { content: "."; } 40% { content: ".."; } 60%,100% { content: "..."; } }
+
+    .pem-box { background: #0a0a1a; border: 1px solid #333; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 0.75em; color: #888; overflow-x: auto; white-space: pre-wrap; margin-top: 8px; max-height: 150px; overflow-y: auto; }
+
+    footer { text-align: center; padding: 30px; color: #444; font-size: 0.8em; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PQC Migration Toolkit</h1>
+      <p>Post-Quantum Cryptography Standards &mdash; Interactive Demonstrations &amp; Benchmarks</p>
+    </header>
+
+    <div class="nav">
+      <button class="active" onclick="showPanel('kem')">ML-KEM Key Exchange</button>
+      <button onclick="showPanel('sign')">ML-DSA Signatures</button>
+      <button onclick="showPanel('tls')">Hybrid TLS</button>
+      <button onclick="showPanel('cert')">Certificate Migration</button>
+      <button onclick="showPanel('bench')">Benchmarks</button>
+      <button onclick="showPanel('hybrid')">Hybrid Cert Chain</button>
+    </div>
+
+    <!-- Module 1: KEM -->
+    <div id="panel-kem" class="panel active">
+      <div class="card"><h3>ML-KEM Key Encapsulation (FIPS 203)</h3>
+        <p style="color:#888;font-size:0.85em;margin-bottom:12px">Three security levels compared. All operations use pure Python implementations of the NIST-standardized ML-KEM algorithm.</p>
+        <div id="kem-results"><div class="loading">Running KEM operations</div></div>
+      </div>
+    </div>
+
+    <!-- Module 2: Sign -->
+    <div id="panel-sign" class="panel">
+      <div class="card"><h3>ML-DSA Digital Signatures (FIPS 204)</h3>
+        <p style="color:#888;font-size:0.85em;margin-bottom:12px">Three security levels for post-quantum digital signatures. Based on the NIST-standardized ML-DSA (Crystals-Dilithium) algorithm.</p>
+        <div id="sign-results"><div class="loading">Running signature operations</div></div>
+      </div>
+    </div>
+
+    <!-- Module 3: TLS -->
+    <div id="panel-tls" class="panel">
+      <div class="card"><h3>Hybrid TLS 1.3 Handshake (X25519 + ML-KEM-768)</h3>
+        <p style="color:#888;font-size:0.85em;margin-bottom:12px">Same design as Google Chrome's X25519MLKEM768 hybrid key exchange, shipped since 2024. Both classical and quantum-safe keys are combined via HKDF.</p>
+        <div id="tls-results"><div class="loading">Simulating TLS handshake</div></div>
+      </div>
+    </div>
+
+    <!-- Module 4: Cert -->
+    <div id="panel-cert" class="panel">
+      <div class="card"><h3>Certificate Migration Analysis</h3>
+        <p style="color:#888;font-size:0.85em;margin-bottom:12px">Compare classical certificate sizes with post-quantum key sizes. The size increase is one of the biggest challenges in PQC migration.</p>
+        <div id="cert-results"><div class="loading">Analyzing certificate sizes</div></div>
+      </div>
+      <div class="card"><h3>Size Comparison Chart</h3>
+        <div id="size-chart"><div class="loading">Generating chart</div></div>
+      </div>
+    </div>
+
+    <!-- Module 5: Bench -->
+    <div id="panel-bench" class="panel">
+      <div class="grid-2">
+        <div class="card"><h3>ML-KEM Timing (ms)</h3>
+          <div id="bench-results"><div class="loading">Running benchmarks</div></div>
+        </div>
+        <div class="card"><h3>ML-DSA Timing (ms)</h3>
+          <div id="bench-results2"></div>
+        </div>
+      </div>
+      <div class="card"><h3>Performance Chart</h3>
+        <div id="bench-chart"><div class="loading">Generating chart</div></div>
+      </div>
+    </div>
+
+    <!-- Module 6: Hybrid Cert -->
+    <div id="panel-hybrid" class="panel">
+      <div class="card"><h3>Hybrid Certificate Chain</h3>
+        <p style="color:#888;font-size:0.85em;margin-bottom:12px">Demonstrates a Root CA -> Intermediate -> Leaf certificate chain combining classical RSA and post-quantum ML-DSA. This is the future of TLS certificate hierarchies during the PQC transition.</p>
+        <div id="hybrid-results"><div class="loading">Generating hybrid certificate chain</div></div>
+      </div>
+    </div>
+
+    <footer>PQC Migration Toolkit &mdash; Built with kyber-py, dilithium-py, cryptography, matplotlib &amp; Flask</footer>
+  </div>
+
+  <script>
+    function showPanel(name) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      document.querySelector(`.nav button:nth-child(${['kem','sign','tls','cert','bench','hybrid'].indexOf(name)+1})`)?.classList.add('active');
+      loadPanel(name);
+    }
+
+    function loadPanel(name) {
+      if (name === 'kem' && !document.getElementById('kem-results').querySelector('table'))
+        fetch('/api/kem').then(r => r.json()).then(d => renderKEM(d));
+      if (name === 'sign') fetch('/api/sign').then(r => r.json()).then(d => renderSign(d));
+      if (name === 'tls') fetch('/api/tls').then(r => r.json()).then(d => renderTLS(d));
+      if (name === 'cert') { fetch('/api/cert').then(r => r.json()).then(d => renderCert(d)); fetch('/api/size-chart').then(r => r.json()).then(d => { document.getElementById('size-chart').innerHTML = `<img class="chart-img" src="${d.chart}?t=${Date.now()}">`; }); }
+      if (name === 'bench') { fetch('/api/bench').then(r => r.json()).then(d => renderBench(d)); fetch('/api/bench-chart').then(r => r.json()).then(d => { document.getElementById('bench-chart').innerHTML = `<img class="chart-img" src="${d.chart}?t=${Date.now()}">`; }); }
+      if (name === 'hybrid') fetch('/api/hybrid-cert').then(r => r.json()).then(d => renderHybrid(d));
+    }
+
+    function renderKEM(data) {
+      let h = '<table><tr><th>Algorithm</th><th>Public Key</th><th>Private Key</th><th>Ciphertext</th><th>Shared Secret</th><th>Status</th></tr>';
+      data.forEach(d => { h += `<tr><td>${d.name}</td><td>${d.pk} B</td><td>${d.sk} B</td><td>${d.ct} B</td><td>${d.shared} B</td><td class="${d.pass?'pass':'fail'}">${d.pass?'PASS':'FAIL'}</td></tr>`; });
+      h += '</table>';
+      h += '<div class="note-box">Note: ML-KEM-512 provides ~128-bit security, ML-KEM-768 ~192-bit, ML-KEM-1024 ~256-bit. Compare to RSA-2048 public key size of 256 bytes.</div>';
+      document.getElementById('kem-results').innerHTML = h;
+    }
+
+    function renderSign(data) {
+      let h = '<table><tr><th>Algorithm</th><th>Public Key</th><th>Private Key</th><th>Signature</th><th>Status</th></tr>';
+      data.forEach(d => { h += `<tr><td>${d.name}</td><td>${d.pk} B</td><td>${d.sk} B</td><td>${d.sig} B</td><td class="${d.valid?'pass':'fail'}">${d.valid?'VALID':'INVALID'}</td></tr>`; });
+      h += '</table>';
+      h += '<div class="note-box">Compare to ECDSA P-256 signature size of ~70 bytes. PQC signatures are 35-66x larger, which impacts bandwidth and storage.</div>';
+      document.getElementById('sign-results').innerHTML = h;
+    }
+
+    function renderTLS(data) {
+      let h = `<table>
+        <tr><th>Parameter</th><th>Value</th></tr>
+        <tr><td>Client X25519 Pubkey</td><td>${data.client_x25519} bytes</td></tr>
+        <tr><td>Client ML-KEM Pubkey</td><td>${data.client_kem} bytes</td></tr>
+        <tr><td>Total Client Payload</td><td>${data.client_total} bytes</td></tr>
+        <tr><td>Server X25519 Pubkey</td><td>${data.server_x25519} bytes</td></tr>
+        <tr><td>ML-KEM Ciphertext</td><td>${data.kem_ct} bytes</td></tr>
+        <tr><td>Final Session Key (hex)</td><td>${data.session_key}...</td></tr>
+        <tr><td>Client & Server Keys Match</td><td class="${data.match?'pass':'fail'}">${data.match?'MATCH':'MISMATCH'}</td></tr>
+      </table>`;
+      h += '<div class="note-box">If a quantum computer breaks X25519 tomorrow, ML-KEM still protects the session. If ML-KEM is broken, X25519 still protects it. This is the industry-standard hybrid approach.</div>';
+      document.getElementById('tls-results').innerHTML = h;
+    }
+
+    function renderCert(data) {
+      let h = '<table><tr><th>Type</th><th>Size</th></tr>';
+      data.forEach(d => {
+        if (d.type === 'classical') h += `<tr><td>${d.label}</td><td>${d.size} bytes (PEM)</td></tr>`;
+        else h += `<tr><td>${d.label}</td><td>pk=${d.pk}B, sk=${d.sk}B</td></tr>`;
+      });
+      h += '</table>';
+      h += '<div class="note-box">PQC keys are 3-10x larger than classical equivalents. This means larger TLS handshakes, potential MTU fragmentation, and slower page loads on mobile networks.</div>';
+      document.getElementById('cert-results').innerHTML = h;
+    }
+
+    function renderBench(data) {
+      function tableFor(keys, ops) {
+        let h = '<table><tr><th>Algorithm</th>'; ops.forEach(o => h += `<th>${o}</th>`); h += '</tr>';
+        keys.forEach(k => { if (data[k]) { h += `<tr><td>${k}</td>`; ops.forEach(o => h += `<td>${data[k][o]} ms</td>`); h += '</tr>'; }});
+        h += '</table>';
+        return h;
+      }
+      document.getElementById('bench-results').innerHTML = tableFor(['ML-KEM-512','ML-KEM-768','ML-KEM-1024'], ['keygen','encaps','decaps']);
+      document.getElementById('bench-results2').innerHTML = tableFor(['ML-DSA-44','ML-DSA-65','ML-DSA-87'], ['keygen','sign','verify']);
+    }
+
+    function renderHybrid(data) {
+      let h = '<table><tr><th>Certificate</th><th>Details</th></tr>';
+      data.chain.forEach(c => {
+        let detail = c.size ? `${c.size} bytes` : `pk=${c.pk_size}B, sk=${c.sk_size}B`;
+        if (c.pem) detail += '<div class="pem-box">' + c.pem + '</div>';
+        h += `<tr><td>${c.name}</td><td>${detail}</td></tr>`;
+      });
+      h += '</table>';
+      h += `<div class="note-box">${data.summary}</div>`;
+      document.getElementById('hybrid-results').innerHTML = h;
+    }
+
+    // Load first panel
+    loadPanel('kem');
+  </script>
+</body>
+</html>

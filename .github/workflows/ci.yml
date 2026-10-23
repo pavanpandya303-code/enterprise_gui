@@ -1,0 +1,43 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install kyber-py dilithium-py cryptography matplotlib Pillow pytest
+      - run: pytest tests/ -v
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ruff
+      - run: ruff check src/ tests/ --ignore=E501,E402,F403,F405
+
+  build:
+    runs-on: windows-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install kyber-py dilithium-py cryptography matplotlib Pillow customtkinter PyInstaller
+      - run: pyinstaller --onefile --windowed --icon=NONE --name PQC_Migration_Toolkit main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PQC_Migration_Toolkit-windows
+          path: dist/PQC_Migration_Toolkit.exe
